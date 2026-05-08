@@ -1,4 +1,4 @@
-# QueryLens Search Engine
+# 🔍 QueryLens Search Engine
 
 > An information retrieval and NLP project for the BBC News corpus.
 > National University of Technology · Department of Computer Science
@@ -132,7 +132,20 @@ Sidebar controls in the running app:
 - **Categories** — filter to one or more BBC categories
 - **Spell correction** — toggle on/off
 - **Query expansion** — toggle on/off
+  
+## Features
 
+- TF-IDF based document ranking for relevance scoring  
+- BM25 algorithm used as an improved ranking alternative  
+- Spell correction to fix user query errors before processing  
+- Query expansion using synonyms to improve recall  
+- Title matching to boost documents with direct query relevance  
+- Keyword overlap for semantic similarity detection  
+- Query coverage scoring to measure completeness of results  
+- Weighted scoring function to combine all features into final rank  
+- Simple HTML and CSS based frontend for user interaction  
+- Lightweight Python backend for fast processing and indexing
+  
 ## Team
 
 National University of Technology (NUTECH) · Department of Computer Science
