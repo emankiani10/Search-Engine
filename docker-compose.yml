@@ -1,13 +1,11 @@
-version: "3.9"
-
 services:
-  noor-search:
+  querylens:
     build: .
-    container_name: noor_search_engine
+    container_name: querylens
     ports:
       - "8501:8501"
     volumes:
-      # Mount your dataset without rebuilding the image
+      # Mount the dataset so swapping the CSV doesn't require a rebuild
       - ./data:/app/data:ro
     environment:
       - PYTHONUNBUFFERED=1

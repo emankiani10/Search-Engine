@@ -8,9 +8,10 @@ venv/
 dist/
 build/
 
-# Data (large files — keep out of git)
+# Data — keep the BBC corpus tracked, ignore other large dumps
 data/*.csv
 data/*.json
+!data/bbc_news.csv
 
 # Streamlit (keep theme config; ignore secrets)
 .streamlit/secrets.toml
