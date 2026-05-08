@@ -1,346 +1,117 @@
-# 🔍 Noor Search Engine
+**NLP | National University of Technology**
 
-A university-level **NLP / Information Retrieval** project that implements a
-full-featured search engine over the BBC News dataset using TF-IDF, BM25, query
-expansion, and spell correction — with a clean Streamlit UI.
+# 🔍 QueryLens Search Engine
 
----
+### Advanced Information Retrieval System for BBC News Analytics
 
-## 📁 Project Structure
-
-```
-search_engine/
-│
-├── data/
-│   └── bbc_news.csv          ← your dataset goes here
-│
-├── app.py                    ← Streamlit UI
-├── preprocessing.py          ← text cleaning pipeline
-├── search_engine.py          ← TF-IDF, BM25, expansion, correction
-│
-├── requirements.txt
-├── Dockerfile
-├── docker-compose.yml
-├── .gitignore
-└── README.md
-```
+**QueryLens** is a university-level Information Retrieval (IR) and Natural Language Processing (NLP) framework designed to provide high-precision search capabilities over structured news datasets. By integrating probabilistic ranking models like BM25 with traditional vector space models (TF-IDF), QueryLens bridges the gap between raw data and actionable insights.
 
 ---
 
-## 🚀 Features
+## 📂 Project Architecture
 
-| Feature | Description |
-|---------|-------------|
-| **TF-IDF Ranking** | Cosine similarity on TF-IDF vectors (sklearn) |
-| **BM25 Ranking** | Probabilistic ranking with length normalisation |
-| **Spell Correction** | pyspellchecker fixes noisy queries |
-| **Query Expansion** | WordNet synonyms increase recall |
-| **Streamlit UI** | Responsive, professional search interface |
-| **Expandable Previews** | Full article available in-place |
-| **Category Labels** | Colour-coded chips per news category |
+The system is designed with a modular architecture to ensure scalability and ease of maintenance.
 
----
-
-## 🛠️ Tech Stack
-
-- **Python 3.11**
-- **pandas** — CSV loading and DataFrame operations
-- **scikit-learn** — TF-IDF vectorisation, cosine similarity
-- **NLTK** — tokenisation, stopword removal, WordNet synonyms, lemmatisation
-- **rank-bm25** — BM25Okapi implementation
-- **pyspellchecker** — spell correction
-- **Streamlit** — web UI
+| Module | Component | Responsibility |
+| --- | --- | --- |
+| **Frontend** | `app.py` | Streamlit-based interface and session state management. |
+| **Core Engine** | `search_engine.py` | Implementation of TF-IDF, BM25, and similarity scoring. |
+| **NLP Pipeline** | `preprocessing.py` | Tokenization, lemmatization, and stop-word filtering. |
+| **Data Layer** | `/data/` | Storage for the BBC News CSV corpus. |
+| **DevOps** | `Dockerfile` | Containerization and environment reproducibility. |
 
 ---
 
-## 📊 Dataset
+## 🛠️ Technical Specifications
 
-BBC News CSV with columns:
+QueryLens utilizes a sophisticated pipeline to transform unstructured text into searchable mathematical vectors.
 
-| Column | Description |
-|--------|-------------|
-| `category` | News category (sport, business, tech, politics, entertainment) |
-| `filename` | Source file name |
-| `title` | Article headline |
-| `content` | Full article text (primary search field) |
+### Core Technologies
 
----
+* **Linguistic Processing:** NLTK (WordNet & Lemmatizer).
+* **Vectorization:** Scikit-learn (TfidfVectorizer).
+* **Probabilistic Modeling:** Rank-BM25.
+* **Typo Tolerance:** Pyspellchecker.
+* **Interface:** Streamlit Framework.
 
-## 📐 Information Retrieval Concepts
+### Performance Benchmarks
 
-### What is Information Retrieval?
-IR is the science of finding relevant information from large unstructured
-collections based on user queries. Classic examples: Google Search, library
-catalogues, and enterprise document search.
-
----
-
-### TF-IDF
-
-**TF (Term Frequency)**
-```
-TF(t, d) = (number of times t appears in d) / (total terms in d)
-```
-Measures how often a term occurs in a specific document.
-
-**IDF (Inverse Document Frequency)**
-```
-IDF(t) = log( N / (1 + df_t) )
-```
-Where:
-- `N`     = total number of documents
-- `df_t`  = number of documents containing term t
-
-Rare terms across the corpus get a high IDF, common terms get a low IDF.
-
-**TF-IDF**
-```
-TF-IDF(t, d) = TF(t, d) × IDF(t)
-```
-A high score means the term is frequent in this document but rare globally —
-exactly what makes a term characteristic.
+| Algorithm | Best Use Case | Key Advantage |
+| --- | --- | --- |
+| **TF-IDF** | General keyword matching | Efficient for smaller datasets and exact matches. |
+| **BM25** | Dense document corpuses | Handles term saturation and document length normalization. |
+| **Query Expansion** | Broad discovery | Increases recall by identifying semantic synonyms. |
 
 ---
 
-### Cosine Similarity
+## 📐 Mathematical Framework
 
-After converting query and documents to TF-IDF vectors:
-```
-sim(q, d) = (q · d) / (||q|| × ||d||)
-```
-- Range: 0 (no overlap) → 1 (identical direction)
-- Length-normalised: a long and a short doc with the same proportions score equally
+### 1. Vector Space Model (TF-IDF)
 
----
+The importance of a term $t$ in document $d$ is determined by:
 
-### BM25
 
-```
-BM25(q, d) = Σ_t IDF(t) × [tf(t,d) × (k1+1)] / [tf(t,d) + k1 × (1−b + b×|d|/avgdl)]
-```
+$$TF-IDF(t, d) = TF(t, d) \cdot \log\left(\frac{N}{1 + df_t}\right)$$
 
-Parameters:
-- `k1 = 1.5` — term-frequency saturation (diminishing returns after repeated occurrences)
-- `b  = 0.75` — document-length normalisation strength
-- `avgdl`     — average document length in the corpus
+### 2. Probabilistic Ranking (BM25)
 
-**Why BM25 > TF-IDF:**
-1. TF-IDF grows linearly with TF; BM25 saturates (a word appearing 100× is not 100× more relevant than appearing once).
-2. BM25 penalises very long documents that contain a term simply due to length.
+To prevent long documents from unfairly dominating search results, we implement the BM25 formula:
+
+
+$$score(D, Q) = \sum_{q \in Q} IDF(q) \cdot \frac{f(q, D) \cdot (k_1 + 1)}{f(q, D) + k_1 \cdot (1 - b + b \cdot \frac{|D|}{avgdl})}$$
 
 ---
 
-### Query Expansion (WordNet)
+## 🔄 Search Execution Pipeline
 
-```python
-car → automobile, vehicle, motorcar
-```
-
-- Uses NLTK's WordNet synsets to find semantically related words.
-- Appended to the query before TF-IDF vectorisation.
-- Improves **recall**: relevant articles that use synonyms are now retrieved.
+1. **Input Normalization:** Query is converted to lowercase and punctuation is removed.
+2. **Lexical Correction:** The system identifies and corrects spelling errors using Levenshtein Distance.
+3. **Semantic Expansion:** Synonyms are fetched via WordNet to broaden the search net.
+4. **Scoring & Ranking:** The engine calculates scores based on the selected algorithm.
+5. **Presentation:** Results are displayed with dynamically generated snippets and category labels.
 
 ---
 
-### Spell Correction (pyspellchecker)
+## 👩‍💻 Research Team
 
-```
-machien learnng → machine learning
-```
+**National University of Technology (NUTECH)** *Department of Computer Science*
 
-- Uses word frequency dictionaries to find the most likely correction.
-- Applied **before** any other processing.
-- Improves **precision**: zero-match queries caused by typos are rescued.
-
----
-
-### Search Pipeline
-
-```
-User Query
-    │
-    ▼
-[1] Spell Correction          ← fix typos
-    │
-    ▼
-[2] Query Expansion           ← add synonyms
-    │
-    ▼
-[3] Preprocessing             ← lowercase → remove punctuation →
-    │                            remove stopwords → lemmatise
-    ▼
-[4] Vectorisation             ← TF-IDF transform OR BM25 tokenise
-    │
-    ▼
-[5] Scoring                   ← cosine similarity OR BM25 scores
-    │
-    ▼
-[6] Ranking                   ← argsort descending
-    │
-    ▼
-[7] Top-K Results             ← title, category, score, snippet
-```
+| Name | Institutional Email |
+| --- | --- |
+| **Eman Asghar** | emankainif23@nutech.edu.pk |
+| **Aena Habib** | aenahabibf23@nutech.edu.pk |
+| **Dua Kamal** | duakamalf23@nutech.edu.pk |
 
 ---
 
-### Data Flow Diagram
+## 🚀 Deployment Guide
 
-```
-  ┌─────────────────────────────────────────┐
-  │              CSV Dataset                │
-  │  category | title | content            │
-  └──────────────────┬──────────────────────┘
-                     │ pandas.read_csv()
-                     ▼
-  ┌─────────────────────────────────────────┐
-  │           Preprocessing                 │
-  │  lowercase → punct removal → stopwords  │
-  │  → tokenise → lemmatise                │
-  └──────────────────┬──────────────────────┘
-                     │
-           ┌─────────┴──────────┐
-           ▼                    ▼
-  ┌─────────────────┐  ┌─────────────────────┐
-  │  TF-IDF Matrix  │  │   BM25 Index         │
-  │  (sklearn)      │  │   (rank_bm25)        │
-  └────────┬────────┘  └──────────┬───────────┘
-           │                      │
-           └──────────┬───────────┘
-                      │
-  ┌───────────────────▼──────────────────────┐
-  │              Query Processing             │
-  │  spell correct → expand → preprocess     │
-  └───────────────────┬──────────────────────┘
-                      │
-  ┌───────────────────▼──────────────────────┐
-  │              Ranking                      │
-  │  cosine similarity OR BM25 score         │
-  └───────────────────┬──────────────────────┘
-                      │
-  ┌───────────────────▼──────────────────────┐
-  │          Top-K Results Display            │
-  │  title | category | score | snippet      │
-  └──────────────────────────────────────────┘
-```
-
----
-
-### Algorithms
-
-**TF-IDF Search Algorithm**
-```
-1. Load CSV with pandas
-2. For each document d in corpus:
-   a. Preprocess(d) → cleaned string
-3. Fit TfidfVectorizer on preprocessed corpus → tfidf_matrix
-4. For query q:
-   a. SpellCorrect(q) → q'
-   b. ExpandQuery(q') → q''
-   c. Preprocess(q'') → q_clean
-   d. Transform q_clean → query_vector
-   e. scores = cosine_similarity(query_vector, tfidf_matrix)
-   f. Rank documents by scores descending
-   g. Return top-K documents
-```
-
-**BM25 Algorithm**
-```
-1. Tokenise all preprocessed documents → token lists
-2. BM25Okapi(token_lists) builds the index
-3. For query q:
-   a. SpellCorrect(q) → q'
-   b. ExpandQuery(q') → q''
-   c. Preprocess(q'') → q_clean
-   d. tokens = q_clean.split()
-   e. scores = bm25.get_scores(tokens)
-   f. Normalise scores to [0,1]
-   g. Rank descending → return top-K
-```
-
----
-
-## ⚡ Advantages
-
-- Handles noisy queries via spell correction
-- Improves recall via synonym expansion
-- Supports two ranking algorithms (comparison ready)
-- Fully modular — each concern is in its own file
-- Cached index — rebuilds only once per session
-
-## ⚠️ Limitations
-
-- TF-IDF is bag-of-words — ignores word order and context
-- WordNet expansion can introduce drift (wrong senses)
-- BM25 and TF-IDF are both keyword-based; semantic search (BERT) would be stronger
-- pyspellchecker is dictionary-based; rare technical terms may be mis-corrected
-
-## 🔮 Future Improvements
-
-- Semantic search with sentence-transformers (SBERT)
-- Query auto-suggestions / autocomplete
-- Filter by category before ranking
-- Named entity highlighting in snippets
-- Persistent index (save/load with joblib)
-- REST API with FastAPI for headless access
-
----
-
-## 🏗️ Installation & Running
-
-### Option A — Local (VSCode)
+### Local Environment
 
 ```bash
-# 1. Clone / open project
-cd noor_search_engine
-
-# 2. Create virtual environment
+# Initialize environment
 python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
+source venv/bin/activate
 
-# 3. Install dependencies
+# Install dependencies
 pip install -r requirements.txt
 
-# 4. Place dataset
-mkdir -p data
-cp /path/to/bbc_news.csv data/
-
-# 5. Run
+# Launch application
 streamlit run app.py
+
 ```
 
-Open `http://localhost:8501` in your browser.
-
----
-
-### Option B — Docker
+### Docker Implementation
 
 ```bash
-# 1. Place dataset in data/ folder
-mkdir -p data && cp /path/to/bbc_news.csv data/
-
-# 2. Build & run
 docker compose up --build
 
-# OR without compose:
-docker build -t noor-search .
-docker run -p 8501:8501 -v $(pwd)/data:/app/data noor-search
-```
-
-Open `http://localhost:8501`.
-
----
-
-### Option C — GitHub Actions CI (optional)
-
-Push to GitHub; add `.github/workflows/ci.yml` that runs:
-```yaml
-- pip install -r requirements.txt
-- python -c "from search_engine import SearchEngine; print('OK')"
 ```
 
 ---
 
-## 👩‍💻 Author
+## 📄 License
 
-**Noor** — University NLP / LP Assignment  
-Stack: Python · scikit-learn · NLTK · rank-bm25 · Streamlit · Docker
+This project is licensed under the **MIT License**.
+
+Copyright (c) 2026 QueryLens 
