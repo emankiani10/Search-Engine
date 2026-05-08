@@ -131,11 +131,13 @@ html, body, [class*="css"], [data-testid="stAppViewContainer"], [data-testid="st
     font-weight: 600 !important;
     letter-spacing: 0.01em;
     transition: background 0.15s;
+    white-space: nowrap !important;
 }
 .stButton > button:hover {
     background: var(--accent-2) !important;
     border-color: var(--accent-2) !important;
 }
+.stButton > button p { white-space: nowrap !important; overflow: visible !important; }
 
 /* ── Notice boxes ─────────────────────────────────────────────────────────── */
 .notice {
@@ -378,7 +380,7 @@ with st.sidebar:
 # ════════════════════════════════════════════════════════════════════════════
 
 # Suggestion buttons set query via session state
-SUGGESTIONS = ["machine learning economy", "footbal champion", "election results", "oil prices"]
+SUGGESTIONS = ["economy", "football", "election", "technology"]
 
 if "query" not in st.session_state:
     st.session_state["query"] = ""
@@ -394,8 +396,8 @@ with query_col:
 with btn_col:
     search_clicked = st.button("Search", use_container_width=True, type="primary")
 
-# Suggestion chips
-sugg_cols = st.columns([1] + [1] * len(SUGGESTIONS) + [4])
+# Suggestion chips — fit content width so words don't wrap
+sugg_cols = st.columns([0.6, 1.2, 1.2, 1.2, 1.2, 4])
 sugg_cols[0].markdown(
     '<div class="suggestion-row"><span class="label">Try:</span></div>',
     unsafe_allow_html=True,

@@ -12,8 +12,8 @@ build/
 data/*.csv
 data/*.json
 
-# Streamlit
-.streamlit/
+# Streamlit (keep theme config; ignore secrets)
+.streamlit/secrets.toml
 
 # Docker
 *.log

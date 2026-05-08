@@ -8,6 +8,18 @@
 
 ---
 
+## 🖼 User Interface
+
+**Home — corpus overview, ranking controls, and category filter:**
+
+![QueryLens home](assets/ui-home.png)
+
+**Results — spell correction, query expansion, and highlighted snippets:**
+
+![QueryLens results](assets/ui-results.png)
+
+---
+
 ## 📂 Project Architecture
 
 The system is designed with a modular architecture to ensure scalability and ease of maintenance.
