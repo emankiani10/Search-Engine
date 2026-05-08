@@ -81,6 +81,8 @@ $$score(D, Q) = \sum_{q \in Q} IDF(q) \cdot \frac{f(q, D) \cdot (k_1 + 1)}{f(q, 
 | **Eman Asghar** | emankainif23@nutech.edu.pk |
 | **Aena Habib** | aenahabibf23@nutech.edu.pk |
 | **Dua Kamal** | duakamalf23@nutech.edu.pk |
+| **Aleena Tahir** | aleenatahirf23@nutech.edu.pk |
+| **Saqlain Abbas** | saqlainabbas@nutech.edu.pk |
 
 ---
 
