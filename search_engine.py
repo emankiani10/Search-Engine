@@ -26,6 +26,7 @@ BM25 (Best Match 25):
     BM25(q,d) = Σ IDF(t) × [tf(t,d)(k1+1)] / [tf(t,d) + k1(1−b+b·|d|/avgdl)]
 """
 
+import re
 import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -34,13 +35,15 @@ from rank_bm25 import BM25Okapi
 from spellchecker import SpellChecker
 import nltk
 from nltk.corpus import wordnet
+from nltk.stem import WordNetLemmatizer
 
 from preprocessing import preprocess_text, preprocess_corpus, download_nltk_resources
 
 download_nltk_resources()
 
-# ── Spell checker singleton ──────────────────────────────────────────────────
-_SPELL = SpellChecker()
+# ── Singletons ───────────────────────────────────────────────────────────────
+_SPELL      = SpellChecker()
+_LEMMATIZER = WordNetLemmatizer()
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -61,13 +64,22 @@ def correct_spelling(query: str) -> tuple[str, bool]:
     corrected = []
     changed   = False
 
+    # Only consider lowercase, alphabetic tokens as candidates for correction —
+    # this protects proper nouns (e.g. "Sundar", "BBC") from being mangled.
+    candidates = {
+        w for w in words
+        if w.isalpha() and w.islower() and len(w) > 2
+    }
+    unknown = _SPELL.unknown(candidates)
+
     for word in words:
-        fixed = _SPELL.correction(word)
-        if fixed and fixed != word.lower():
-            corrected.append(fixed)
-            changed = True
-        else:
-            corrected.append(word)
+        if word in unknown:
+            fixed = _SPELL.correction(word)
+            if fixed and fixed != word:
+                corrected.append(fixed)
+                changed = True
+                continue
+        corrected.append(word)
 
     return " ".join(corrected), changed
 
@@ -87,18 +99,28 @@ def expand_query(query: str) -> tuple[str, list]:
         expanded_query : str  — original + synonym terms
         synonyms_added : list — list of (original_term, [synonyms]) pairs
     """
-    tokens         = query.lower().split()
-    extra_terms    = []
-    synonyms_log   = []
+    raw_tokens   = [t for t in query.lower().split() if t.isalpha()]
+    extra_terms  = []
+    synonyms_log = []
+    seen         = set(raw_tokens)
 
-    for token in tokens:
-        syns = set()
-        for synset in wordnet.synsets(token):
+    for token in raw_tokens:
+        # Lemmatise to base form so "running" looks up "run", "cars" looks up "car".
+        base = _LEMMATIZER.lemmatize(_LEMMATIZER.lemmatize(token, pos="v"))
+        syns = []
+        for synset in wordnet.synsets(base):
             for lemma in synset.lemmas():
-                name = lemma.name().replace("_", " ")
-                if name != token and name.isalpha():
-                    syns.add(name)
-        syns = list(syns)[:2]          # limit to 2 synonyms per word
+                name = lemma.name().replace("_", " ").lower()
+                if name == base or name == token or not name.isalpha():
+                    continue
+                if name in seen:
+                    continue
+                seen.add(name)
+                syns.append(name)
+                if len(syns) == 2:
+                    break
+            if len(syns) == 2:
+                break
         if syns:
             extra_terms.extend(syns)
             synonyms_log.append((token, syns))
@@ -174,6 +196,7 @@ class SearchEngine:
         top_k:          int  = 5,
         use_expansion:  bool = True,
         use_correction: bool = True,
+        categories:     list = None,
     ) -> dict:
         """
         Run a search query against the indexed corpus.
@@ -223,6 +246,12 @@ class SearchEngine:
             scores = self._tfidf_score(processed_query)
         else:
             scores = self._bm25_score(processed_query)
+
+        # ── Step 4b: Apply category filter (zero out non-matching docs) ──
+        if categories:
+            wanted = {c.lower() for c in categories}
+            mask   = self.df["category"].astype(str).str.lower().isin(wanted).to_numpy()
+            scores = np.where(mask, scores, 0.0)
 
         # ── Step 5: Retrieve top-k results ───────────────────────────────
         top_indices = np.argsort(scores)[::-1][:top_k]
@@ -275,13 +304,17 @@ class SearchEngine:
     @staticmethod
     def _snippet(content: str, query: str, window: int = 300) -> str:
         """
-        Return a ~300-char excerpt from *content* nearest to query terms.
-        Falls back to the first 300 characters if no match found.
+        Return a ~300-char excerpt from *content* nearest to query terms,
+        with matched query words wrapped in <mark> for UI highlighting.
         """
         lower_content = content.lower()
-        best_pos      = 0
+        terms = [
+            t for t in re.findall(r"[A-Za-z]{2,}", query.lower())
+            if len(t) > 1
+        ]
 
-        for word in query.lower().split():
+        best_pos = 0
+        for word in terms:
             pos = lower_content.find(word)
             if pos != -1:
                 best_pos = pos
@@ -293,4 +326,11 @@ class SearchEngine:
             snippet = "…" + snippet
         if start + window < len(content):
             snippet += "…"
+
+        for word in sorted(set(terms), key=len, reverse=True):
+            snippet = re.sub(
+                rf"(?i)\b({re.escape(word)})\b",
+                r"<mark>\1</mark>",
+                snippet,
+            )
         return snippet
