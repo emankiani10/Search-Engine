@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  noor-search:
+    build: .
+    container_name: noor_search_engine
+    ports:
+      - "8501:8501"
+    volumes:
+      # Mount your dataset without rebuilding the image
+      - ./data:/app/data:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
