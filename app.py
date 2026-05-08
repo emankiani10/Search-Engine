@@ -47,8 +47,10 @@ html, body, [class*="css"], [data-testid="stAppViewContainer"], [data-testid="st
 }
 [data-testid="stAppViewContainer"] { background: var(--bg); }
 
-/* Hide Streamlit chrome we don't need */
-#MainMenu, footer, header { visibility: hidden; }
+/* Hide Streamlit chrome we don't need (keep header so sidebar toggle stays) */
+#MainMenu, footer { visibility: hidden; }
+[data-testid="stHeader"] { background: transparent; }
+[data-testid="stToolbar"] { right: 1rem; }
 .block-container { padding-top: 2rem; max-width: 1100px; }
 
 /* ── Header ───────────────────────────────────────────────────────────────── */
@@ -379,17 +381,25 @@ with st.sidebar:
 #  Search bar
 # ════════════════════════════════════════════════════════════════════════════
 
-# Suggestion buttons set query via session state
+# Suggestion buttons feed the search input via on_click callbacks.
+# We can't write to a widget's key after the widget is instantiated on the same
+# run, so we use on_click handlers — those execute *before* the rerun, so the
+# text_input picks up the new value cleanly on the next render.
 SUGGESTIONS = ["economy", "football", "election", "technology"]
 
-if "query" not in st.session_state:
-    st.session_state["query"] = ""
+if "query_input" not in st.session_state:
+    st.session_state["query_input"] = ""
+
+
+def _set_query(value: str) -> None:
+    st.session_state["query_input"] = value
+
 
 query_col, btn_col = st.columns([6, 1])
 with query_col:
     query = st.text_input(
         "Search",
-        key="query",
+        key="query_input",
         placeholder='Try "machine learning economy" or "footbal champion"',
         label_visibility="collapsed",
     )
@@ -403,9 +413,13 @@ sugg_cols[0].markdown(
     unsafe_allow_html=True,
 )
 for i, s in enumerate(SUGGESTIONS):
-    if sugg_cols[i + 1].button(s, key=f"sugg_{i}", use_container_width=True):
-        st.session_state["query"] = s
-        st.rerun()
+    sugg_cols[i + 1].button(
+        s,
+        key=f"sugg_{i}",
+        use_container_width=True,
+        on_click=_set_query,
+        args=(s,),
+    )
 
 # ════════════════════════════════════════════════════════════════════════════
 #  Results
