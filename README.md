@@ -18,6 +18,18 @@ on top to improve recall and precision.
 
 ![QueryLens results](assets/ui-results.png)
 
+## Dataset
+
+QueryLens is built and evaluated against the **BBC News Dataset**, a benchmark
+corpus widely used for information retrieval and text classification.
+
+| Property            | Value                                                        |
+| ------------------- | ------------------------------------------------------------ |
+| Total articles      | 2,225                                                        |
+| Format              | Structured CSV (`title`, `content`, `category`)              |
+| Categories          | Business, Entertainment, Politics, Sport, Tech               |
+| Indexing strategy   | Full-text indexing on `content`; `title` weighted separately |
+
 ## Quick start
 
 ### Local environment
