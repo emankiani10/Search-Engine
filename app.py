@@ -1,20 +1,20 @@
 """
-app.py — Streamlit UI for Noor Search Engine
-=============================================
+app.py — Streamlit UI for QueryLens Search Engine
+=================================================
 Run with:  streamlit run app.py
 """
 
-import streamlit as st
-import pandas as pd
-import time
 import os
+import time
+import pandas as pd
+import streamlit as st
 
 from search_engine import SearchEngine
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Noor Search Engine",
-    page_icon="🔍",
+    page_title="QueryLens Search Engine",
+    page_icon=None,
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -22,96 +22,263 @@ st.set_page_config(
 # ── Custom CSS ────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-/* ── Global font & background ── */
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap');
 
-html, body, [class*="css"] {
-    font-family: 'IBM Plex Sans', sans-serif;
+:root {
+    --bg:        #fafaf9;
+    --surface:   #ffffff;
+    --border:    #e7e5e4;
+    --border-2:  #d6d3d1;
+    --ink:       #1c1917;
+    --ink-2:     #44403c;
+    --muted:     #78716c;
+    --accent:    #0f766e;
+    --accent-2:  #115e59;
+    --accent-bg: #f0fdfa;
+    --warn:      #b45309;
+    --warn-bg:   #fffbeb;
+    --info:      #1d4ed8;
+    --info-bg:   #eff6ff;
 }
 
-/* ── Header ── */
-.main-header {
-    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-    border-radius: 12px;
-    padding: 2rem 2.5rem;
-    margin-bottom: 1.5rem;
-    color: white;
+html, body, [class*="css"], [data-testid="stAppViewContainer"], [data-testid="stSidebar"] {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--ink);
 }
-.main-header h1 { font-size: 2.4rem; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
-.main-header p  { opacity: 0.75; margin: 0.4rem 0 0; font-size: 1rem; }
+[data-testid="stAppViewContainer"] { background: var(--bg); }
 
-/* ── Result card ── */
-.result-card {
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-left: 4px solid #2c5364;
-    border-radius: 8px;
-    padding: 1.2rem 1.5rem;
-    margin-bottom: 1rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-    transition: box-shadow 0.2s;
+/* Hide Streamlit chrome we don't need */
+#MainMenu, footer, header { visibility: hidden; }
+.block-container { padding-top: 2rem; max-width: 1100px; }
+
+/* ── Header ───────────────────────────────────────────────────────────────── */
+.header-block {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1.4rem;
+    margin-bottom: 2rem;
 }
-.result-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-
-/* ── Score badge ── */
-.score-badge {
-    display: inline-block;
-    background: #2c5364;
-    color: white;
-    border-radius: 20px;
-    padding: 2px 12px;
-    font-size: 0.8rem;
-    font-family: 'IBM Plex Mono', monospace;
+.header-block .eyebrow {
+    color: var(--accent);
+    font-size: 0.78rem;
     font-weight: 600;
-    margin-left: 8px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+}
+.header-block h1 {
+    font-size: 2.1rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    margin: 0 0 0.35rem 0;
+    line-height: 1.15;
+}
+.header-block .subtitle {
+    color: var(--ink-2);
+    font-size: 0.98rem;
+    margin: 0;
 }
 
-/* ── Category chip ── */
+/* ── Stat row ─────────────────────────────────────────────────────────────── */
+.stat-row { display: flex; gap: 1rem; margin-bottom: 1.6rem; flex-wrap: wrap; }
+.stat-card {
+    flex: 1;
+    min-width: 180px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.95rem 1.1rem;
+}
+.stat-card .label {
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.stat-card .value {
+    color: var(--ink);
+    font-size: 1.55rem;
+    font-weight: 700;
+    margin-top: 0.2rem;
+    letter-spacing: -0.02em;
+}
+
+/* ── Search input ─────────────────────────────────────────────────────────── */
+[data-testid="stTextInput"] input {
+    background: var(--surface) !important;
+    border: 1px solid var(--border-2) !important;
+    border-radius: 10px !important;
+    padding: 0.9rem 1rem !important;
+    font-size: 1rem !important;
+    color: var(--ink) !important;
+    box-shadow: 0 1px 2px rgba(28,25,23,0.04);
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+[data-testid="stTextInput"] input:focus {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px rgba(15,118,110,0.12) !important;
+    outline: none !important;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+.stButton > button {
+    background: var(--accent) !important;
+    color: #ffffff !important;
+    border: 1px solid var(--accent) !important;
+    border-radius: 10px !important;
+    padding: 0.7rem 1.1rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.01em;
+    transition: background 0.15s;
+}
+.stButton > button:hover {
+    background: var(--accent-2) !important;
+    border-color: var(--accent-2) !important;
+}
+
+/* ── Notice boxes ─────────────────────────────────────────────────────────── */
+.notice {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.85rem 1.05rem;
+    margin-bottom: 0.7rem;
+    font-size: 0.92rem;
+    line-height: 1.55;
+    color: var(--ink-2);
+    background: var(--surface);
+}
+.notice strong { color: var(--ink); font-weight: 600; }
+.notice .tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-right: 0.55rem;
+    vertical-align: 1px;
+}
+.notice.correction .tag { background: var(--warn-bg);   color: var(--warn);   border: 1px solid #fde68a; }
+.notice.expansion  .tag { background: var(--accent-bg); color: var(--accent); border: 1px solid #99f6e4; }
+.notice.method     .tag { background: var(--info-bg);   color: var(--info);   border: 1px solid #bfdbfe; }
+
+/* ── Result card ──────────────────────────────────────────────────────────── */
+.result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.15rem 1.35rem;
+    margin-bottom: 0.9rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.result-card:hover {
+    border-color: var(--border-2);
+    box-shadow: 0 2px 8px rgba(28,25,23,0.05);
+}
+.result-card .meta {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-bottom: 0.45rem;
+    flex-wrap: wrap;
+}
+.result-card .rank {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-weight: 500;
+}
+.result-card h3 {
+    color: var(--ink);
+    font-size: 1.08rem;
+    font-weight: 600;
+    line-height: 1.35;
+    margin: 0 0 0.45rem 0;
+    letter-spacing: -0.01em;
+}
+.result-card .snippet {
+    color: var(--ink-2);
+    font-size: 0.94rem;
+    line-height: 1.6;
+}
+.result-card .snippet mark {
+    background: #fef08a;
+    color: var(--ink);
+    padding: 0 2px;
+    border-radius: 2px;
+}
+
+/* ── Category chip ────────────────────────────────────────────────────────── */
 .cat-chip {
     display: inline-block;
     border-radius: 4px;
-    padding: 2px 10px;
-    font-size: 0.75rem;
+    padding: 2px 8px;
+    font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-right: 6px;
+    letter-spacing: 0.06em;
+    border: 1px solid transparent;
 }
-.cat-sport     { background:#dbeafe; color:#1d4ed8; }
-.cat-business  { background:#dcfce7; color:#166534; }
-.cat-tech      { background:#fef3c7; color:#92400e; }
-.cat-politics  { background:#fce7f3; color:#9d174d; }
-.cat-entertainment { background:#ede9fe; color:#5b21b6; }
-.cat-default   { background:#f1f5f9; color:#334155; }
+.cat-sport         { background:#e0f2fe; color:#075985; border-color:#bae6fd; }
+.cat-business      { background:#dcfce7; color:#14532d; border-color:#bbf7d0; }
+.cat-tech          { background:#fef3c7; color:#78350f; border-color:#fde68a; }
+.cat-politics      { background:#fce7f3; color:#831843; border-color:#fbcfe8; }
+.cat-entertainment { background:#ede9fe; color:#4c1d95; border-color:#ddd6fe; }
+.cat-default       { background:#f5f5f4; color:#44403c; border-color:#e7e5e4; }
 
-/* ── Info boxes ── */
-.info-box {
-    background: #f8fafc;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    padding: 1rem 1.2rem;
-    font-size: 0.88rem;
-    margin-bottom: 0.8rem;
-    line-height: 1.6;
+/* ── Score badge ──────────────────────────────────────────────────────────── */
+.score-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.74rem;
+    font-weight: 500;
+    color: var(--muted);
+    margin-left: auto;
 }
-.correction-box { border-left: 4px solid #f59e0b; background: #fffbeb; }
-.expansion-box  { border-left: 4px solid #10b981; background: #ecfdf5; }
-.method-box     { border-left: 4px solid #6366f1; background: #eef2ff; }
 
-/* ── Snippet ── */
-.snippet { color: #64748b; font-size: 0.9rem; line-height: 1.55; margin-top: 0.5rem; }
+/* ── Sidebar ──────────────────────────────────────────────────────────────── */
+[data-testid="stSidebar"] { background: var(--surface); border-right: 1px solid var(--border); }
+[data-testid="stSidebar"] .block-container { padding-top: 1.5rem; }
+.sidebar-section {
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin: 1.1rem 0 0.4rem 0;
+}
+.sidebar-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 0.3rem;
+    letter-spacing: -0.01em;
+}
+.sidebar-sub {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 1rem;
+}
+[data-testid="stSidebar"] hr { margin: 0.4rem 0 !important; border-color: var(--border); }
+
+/* ── Suggestion chips ─────────────────────────────────────────────────────── */
+.suggestion-row { color: var(--muted); font-size: 0.85rem; margin: 0.6rem 0 1.4rem 0; }
+.suggestion-row .label { font-weight: 500; margin-right: 0.5rem; }
+
+/* ── Expander ─────────────────────────────────────────────────────────────── */
+.streamlit-expanderHeader { font-weight: 500 !important; color: var(--ink-2) !important; }
 </style>
 """, unsafe_allow_html=True)
 
+
 # ════════════════════════════════════════════════════════════════════════════
-#  Session-State: build index once per session
+#  Index loader (cached once per session)
 # ════════════════════════════════════════════════════════════════════════════
 
 @st.cache_resource(show_spinner=False)
-def load_engine(csv_path: str) -> tuple:
-    """Load CSV and build search index (cached across reruns)."""
+def load_engine(csv_path: str):
     df = pd.read_csv(csv_path)
-    # Normalise column names
     df.columns = [c.strip().lower() for c in df.columns]
     required = {"title", "category", "content"}
     missing  = required - set(df.columns)
@@ -128,86 +295,115 @@ def load_engine(csv_path: str) -> tuple:
 # ════════════════════════════════════════════════════════════════════════════
 
 with st.sidebar:
-    st.markdown("## ⚙️ Settings")
-
-    csv_path = st.text_input(
-        "📂 CSV file path",
-        value="data/bbc_news.csv",
-        help="Relative or absolute path to your BBC News CSV file",
+    st.markdown('<div class="sidebar-title">QueryLens</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="sidebar-sub">Information retrieval over the BBC News corpus.</div>',
+        unsafe_allow_html=True,
     )
 
-    st.markdown("---")
+    st.markdown('<div class="sidebar-section">Dataset</div>', unsafe_allow_html=True)
+    csv_path = st.text_input(
+        "CSV file path",
+        value="data/bbc_news.csv",
+        label_visibility="collapsed",
+    )
+
+    st.markdown('<div class="sidebar-section">Ranking</div>', unsafe_allow_html=True)
     ranking_method = st.radio(
-        "🏆 Ranking Method",
+        "Ranking method",
         options=["TF-IDF", "BM25"],
         index=0,
-        help="TF-IDF uses cosine similarity; BM25 adds length normalisation.",
+        label_visibility="collapsed",
     )
 
-    top_k = st.slider("📄 Number of Results", min_value=1, max_value=20, value=5)
+    top_k = st.slider("Number of results", min_value=1, max_value=20, value=5)
 
-    st.markdown("---")
-    use_correction = st.checkbox("✏️ Spell Correction",  value=True)
-    use_expansion  = st.checkbox("🔗 Query Expansion",   value=True)
-
-    st.markdown("---")
-    st.markdown("### 📖 About")
-    st.markdown(
-        "**Noor Search Engine** — A university-level NLP/IR project "
-        "implementing TF-IDF, BM25, spell correction, and query expansion "
-        "on the BBC News dataset."
-    )
+    st.markdown('<div class="sidebar-section">Query options</div>', unsafe_allow_html=True)
+    use_correction = st.checkbox("Spell correction",  value=True)
+    use_expansion  = st.checkbox("Query expansion",   value=True)
 
 # ════════════════════════════════════════════════════════════════════════════
 #  Header
 # ════════════════════════════════════════════════════════════════════════════
 
 st.markdown("""
-<div class="main-header">
-  <h1>🔍 Noor Search Engine</h1>
-  <p>TF-IDF · BM25 · Query Expansion · Spell Correction · BBC News Corpus</p>
+<div class="header-block">
+  <div class="eyebrow">QueryLens · NUTECH NLP Project</div>
+  <h1>Search the BBC News corpus</h1>
+  <p class="subtitle">TF-IDF and BM25 ranking with WordNet query expansion and spell correction.</p>
 </div>
 """, unsafe_allow_html=True)
 
 # ════════════════════════════════════════════════════════════════════════════
-#  Load Engine
+#  Load engine
 # ════════════════════════════════════════════════════════════════════════════
 
 if not os.path.exists(csv_path):
     st.error(
-        f"❌ Dataset not found at **`{csv_path}`**.\n\n"
-        "Place your `bbc_news.csv` in the `data/` folder, or update the path in the sidebar."
+        f"Dataset not found at `{csv_path}`. "
+        "Place `bbc_news.csv` in the `data/` folder, or update the path in the sidebar."
     )
     st.stop()
 
-with st.spinner("⚙️ Building search index… (first load only)"):
+with st.spinner("Building search index — first load only…"):
     try:
         engine, df = load_engine(csv_path)
     except Exception as e:
         st.error(f"Failed to load dataset: {e}")
         st.stop()
 
-# Dataset quick stats
-col1, col2, col3 = st.columns(3)
-col1.metric("📰 Total Articles", f"{len(df):,}")
-col2.metric("🗂️ Categories",     df["category"].nunique())
-col3.metric("🏆 Ranking",        ranking_method)
+# Stat row
+all_categories = sorted(df["category"].dropna().astype(str).unique().tolist())
+st.markdown(f"""
+<div class="stat-row">
+  <div class="stat-card"><div class="label">Articles</div><div class="value">{len(df):,}</div></div>
+  <div class="stat-card"><div class="label">Categories</div><div class="value">{len(all_categories)}</div></div>
+  <div class="stat-card"><div class="label">Ranking</div><div class="value">{ranking_method}</div></div>
+</div>
+""", unsafe_allow_html=True)
 
-st.markdown("---")
+# Sidebar — categories filter (after load so we know the values)
+with st.sidebar:
+    st.markdown('<div class="sidebar-section">Filter by category</div>', unsafe_allow_html=True)
+    selected_categories = st.multiselect(
+        "Categories",
+        options=all_categories,
+        default=[],
+        label_visibility="collapsed",
+        placeholder="All categories",
+    )
 
 # ════════════════════════════════════════════════════════════════════════════
-#  Search Box
+#  Search bar
 # ════════════════════════════════════════════════════════════════════════════
 
-query_col, btn_col = st.columns([5, 1])
+# Suggestion buttons set query via session state
+SUGGESTIONS = ["machine learning economy", "footbal champion", "election results", "oil prices"]
+
+if "query" not in st.session_state:
+    st.session_state["query"] = ""
+
+query_col, btn_col = st.columns([6, 1])
 with query_col:
     query = st.text_input(
         "Search",
-        placeholder='e.g. "machine learning economy" or "footbal champion"',
+        key="query",
+        placeholder='Try "machine learning economy" or "footbal champion"',
         label_visibility="collapsed",
     )
 with btn_col:
-    search_clicked = st.button("🔍 Search", use_container_width=True, type="primary")
+    search_clicked = st.button("Search", use_container_width=True, type="primary")
+
+# Suggestion chips
+sugg_cols = st.columns([1] + [1] * len(SUGGESTIONS) + [4])
+sugg_cols[0].markdown(
+    '<div class="suggestion-row"><span class="label">Try:</span></div>',
+    unsafe_allow_html=True,
+)
+for i, s in enumerate(SUGGESTIONS):
+    if sugg_cols[i + 1].button(s, key=f"sugg_{i}", use_container_width=True):
+        st.session_state["query"] = s
+        st.rerun()
 
 # ════════════════════════════════════════════════════════════════════════════
 #  Results
@@ -228,9 +424,11 @@ def category_chip(category: str) -> str:
     return f'<span class="cat-chip {css}">{category}</span>'
 
 
-if search_clicked and query.strip():
-    t0 = time.time()
+run_search = search_clicked or (query and st.session_state.get("_last_query") != query)
 
+if run_search and query.strip():
+    st.session_state["_last_query"] = query
+    t0 = time.time()
     with st.spinner("Searching…"):
         response = engine.search(
             query=query,
@@ -238,126 +436,92 @@ if search_clicked and query.strip():
             top_k=top_k,
             use_expansion=use_expansion,
             use_correction=use_correction,
+            categories=selected_categories or None,
         )
-
     elapsed = time.time() - t0
 
-    # ── Correction notice ────────────────────────────────────────────────
     if response["was_corrected"]:
         st.markdown(
-            f'<div class="info-box correction-box">✏️ <strong>Spell Correction:</strong> '
+            f'<div class="notice correction"><span class="tag">Spell correction</span>'
             f'<em>"{response["original_query"]}"</em> → '
             f'<strong>"{response["corrected_query"]}"</strong></div>',
             unsafe_allow_html=True,
         )
 
-    # ── Expansion notice ─────────────────────────────────────────────────
     if use_expansion and response["synonyms_added"]:
         pairs = ", ".join(
-            f"{t} → [{', '.join(s)}]" for t, s in response["synonyms_added"]
+            f'<strong>{t}</strong> → {", ".join(s)}' for t, s in response["synonyms_added"]
         )
         st.markdown(
-            f'<div class="info-box expansion-box">🔗 <strong>Query Expansion:</strong> {pairs}</div>',
+            f'<div class="notice expansion"><span class="tag">Query expansion</span>{pairs}</div>',
             unsafe_allow_html=True,
         )
 
-    # ── Method + timing ─────────────────────────────────────────────────
+    filter_note = (
+        f' &nbsp;·&nbsp; filtered to: <strong>{", ".join(selected_categories)}</strong>'
+        if selected_categories else ""
+    )
     st.markdown(
-        f'<div class="info-box method-box">🏆 <strong>Ranking:</strong> {response["method"]} &nbsp;|&nbsp; '
-        f'⏱ <strong>{elapsed:.3f}s</strong> &nbsp;|&nbsp; '
-        f'📄 <strong>{len(response["results"])}</strong> results</div>',
+        f'<div class="notice method"><span class="tag">{response["method"]}</span>'
+        f'{elapsed:.3f}s &nbsp;·&nbsp; '
+        f'<strong>{len(response["results"])}</strong> results{filter_note}</div>',
         unsafe_allow_html=True,
     )
 
-    # ── Result cards ─────────────────────────────────────────────────────
     if not response["results"]:
-        st.warning("No relevant results found. Try a different query or enable query expansion.")
+        st.warning("No relevant results. Try a different query, broaden categories, or enable expansion.")
     else:
         for res in response["results"]:
-            chip  = category_chip(res["category"])
-            score = res["score"]
-
             st.markdown(f"""
 <div class="result-card">
-  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-    <span style="font-weight:700; font-size:1.05rem;">#{res['rank']} &nbsp;{res['title']}</span>
-    {chip}
-    <span class="score-badge">Score: {score:.4f}</span>
+  <div class="meta">
+    <span class="rank">#{res['rank']:02d}</span>
+    {category_chip(res['category'])}
+    <span class="score-badge">score {res['score']:.4f}</span>
   </div>
+  <h3>{res['title']}</h3>
   <div class="snippet">{res['snippet']}</div>
 </div>
 """, unsafe_allow_html=True)
 
-            with st.expander(f"📖 Full article — {res['title']}"):
+            with st.expander(f"Read full article — {res['title']}"):
                 st.write(res["content"])
 
 elif search_clicked and not query.strip():
-    st.warning("⚠️ Please enter a search query.")
+    st.warning("Please enter a search query.")
 
 # ════════════════════════════════════════════════════════════════════════════
-#  Information Retrieval Concepts Tab (footer)
+#  Concepts footer
 # ════════════════════════════════════════════════════════════════════════════
 
 st.markdown("---")
-with st.expander("📚 Information Retrieval Concepts & Formulas"):
+with st.expander("Information retrieval — concepts and formulas"):
     st.markdown("""
-### What is Information Retrieval?
-Information Retrieval (IR) is the science of obtaining relevant information from
-large collections of unstructured data (documents, web pages, articles) based on
-user queries. A search engine is the classic IR application.
+**TF-IDF** weighs how distinctive a term is to a document:
 
----
+```
+tf(t,d)  = count(t in d) / len(d)
+idf(t)   = log(N / (1 + df_t))
+tfidf    = tf × idf
+```
 
-### TF-IDF
-**Term Frequency–Inverse Document Frequency** assigns a weight to each term in a
-document that reflects how *distinctive* that term is:
-
-| Component | Formula | Intuition |
-|-----------|---------|-----------|
-| TF  | `tf(t,d) = count(t in d) / len(d)` | How often term appears in this doc |
-| IDF | `idf(t) = log(N / (1 + df_t))` | How rare the term is across all docs |
-| TF-IDF | `tfidf(t,d) = tf × idf` | Combined importance weight |
-
----
-
-### Cosine Similarity
-Measures the angle between query vector **q** and document vector **d**:
+**Cosine similarity** measures the angle between query and document vectors:
 
 ```
 sim(q, d) = (q · d) / (||q|| × ||d||)
 ```
 
-Range: 0 (unrelated) → 1 (identical direction).
+**BM25** adds length normalisation and term-frequency saturation:
 
----
-
-### BM25 Formula
 ```
 BM25(q,d) = Σ IDF(t) × [tf(t,d)(k1+1)] / [tf(t,d) + k1(1 − b + b·|d|/avgdl)]
 ```
-- **k1 = 1.5** — controls term-frequency saturation  
-- **b  = 0.75** — controls document-length normalisation  
-- **avgdl**     — average document length in the corpus  
 
-BM25 penalises very long documents and saturates TF, giving better rankings than
-raw TF-IDF on real-world corpora.
+with `k1 = 1.5`, `b = 0.75`. Better than raw TF-IDF on long, varied documents.
 
----
-
-### Why Query Expansion?
-WordNet synonyms increase **recall**: a search for *car* also matches documents
-about *automobile* and *vehicle*, surfacing relevant articles that lack the exact
-query word.
-
-### Why Spell Correction?
-Noisy queries (*machien lerning*) produce zero TF-IDF matches. Correcting to
-*machine learning* before vectorisation dramatically improves **precision**.
-
-### Why Stopword Removal?
-Words like *the, is, a* appear in every document and carry no discriminative
-power. Removing them reduces noise and speeds up computation.
-
-### Why Lemmatisation?
-Reduces inflected forms to their base (*running → run*, *cars → car*), ensuring
-*runs* and *running* match the same index term.
+**Query expansion** uses WordNet synonyms to improve recall — searching for *car*
+also matches *automobile* or *vehicle*. **Spell correction** fixes noisy queries
+like *machien lerning* before vectorisation, dramatically improving precision.
+**Stop-word removal** and **lemmatisation** strip noise and collapse inflected
+forms (*running → run*) so variants share an index entry.
 """)
