@@ -1,129 +1,150 @@
-**NLP | National University of Technology**
+# QueryLens Search Engine
 
-# 🔍 QueryLens Search Engine
+> An information retrieval and NLP project for the BBC News corpus.
+> National University of Technology · Department of Computer Science
 
-### Advanced Information Retrieval System for BBC News Analytics
+QueryLens is a Streamlit application that ranks BBC News articles by relevance
+to a user query. It implements two classical IR models — TF-IDF with cosine
+similarity and BM25 — and layers WordNet query expansion and spell correction
+on top to improve recall and precision.
 
-**QueryLens** is a university-level Information Retrieval (IR) and Natural Language Processing (NLP) framework designed to provide high-precision search capabilities over structured news datasets. By integrating probabilistic ranking models like BM25 with traditional vector space models (TF-IDF), QueryLens bridges the gap between raw data and actionable insights.
+## Screenshots
 
----
-## Dataset Specifications
+**Home — corpus overview, ranking controls, category filter:**
 
-The **QueryLens** engine is optimized for the **BBC News Dataset**, a benchmark corpus used for evaluating information retrieval and text classification models.
+![QueryLens home](assets/ui-home.png)
 
-* **Total Articles:** 2,225
-* **Format:** Structured CSV (`Title`, `Content`, `Category`)
-* **Thematic Categories:** Business, Entertainment, Politics, Sport, and Tech.
-* **Indexing Strategy:** The engine performs full-text indexing on the `Content` field while using `Title` for high-relevance weighting.
+**Results — spell correction, query expansion, highlighted snippets:**
 
----
+![QueryLens results](assets/ui-results.png)
 
-## 📂 Project Architecture
+## Dataset
 
-The system is designed with a modular architecture to ensure scalability and ease of maintenance.
+QueryLens is built and evaluated against the **BBC News Dataset**, a benchmark
+corpus widely used for information retrieval and text classification.
 
-| Module | Component | Responsibility |
-| --- | --- | --- |
-| **Frontend** | `app.py` | Streamlit-based interface and session state management. |
-| **Core Engine** | `search_engine.py` | Implementation of TF-IDF, BM25, and similarity scoring. |
-| **NLP Pipeline** | `preprocessing.py` | Tokenization, lemmatization, and stop-word filtering. |
-| **Data Layer** | `/data/` | Storage for the BBC News CSV corpus. |
-| **DevOps** | `Dockerfile` | Containerization and environment reproducibility. |
+| Property            | Value                                                        |
+| ------------------- | ------------------------------------------------------------ |
+| Total articles      | 2,225                                                        |
+| Format              | Structured CSV (`title`, `content`, `category`)              |
+| Categories          | Business, Entertainment, Politics, Sport, Tech               |
+| Indexing strategy   | Full-text indexing on `content`; `title` weighted separately |
 
----
+## Quick start
 
-## 🛠️ Technical Specifications
-
-QueryLens utilizes a sophisticated pipeline to transform unstructured text into searchable mathematical vectors.
-
-### Core Technologies
-
-* **Linguistic Processing:** NLTK (WordNet & Lemmatizer).
-* **Vectorization:** Scikit-learn (TfidfVectorizer).
-* **Probabilistic Modeling:** Rank-BM25.
-* **Typo Tolerance:** Pyspellchecker.
-* **Interface:** Streamlit Framework.
-
-### Performance Benchmarks
-
-| Algorithm | Best Use Case | Key Advantage |
-| --- | --- | --- |
-| **TF-IDF** | General keyword matching | Efficient for smaller datasets and exact matches. |
-| **BM25** | Dense document corpuses | Handles term saturation and document length normalization. |
-| **Query Expansion** | Broad discovery | Increases recall by identifying semantic synonyms. |
-
----
-
-## 📐 Mathematical Framework
-
-### 1. Vector Space Model (TF-IDF)
-
-The importance of a term $t$ in document $d$ is determined by:
-
-
-$$TF-IDF(t, d) = TF(t, d) \cdot \log\left(\frac{N}{1 + df_t}\right)$$
-
-### 2. Probabilistic Ranking (BM25)
-
-To prevent long documents from unfairly dominating search results, we implement the BM25 formula:
-
-
-$$score(D, Q) = \sum_{q \in Q} IDF(q) \cdot \frac{f(q, D) \cdot (k_1 + 1)}{f(q, D) + k_1 \cdot (1 - b + b \cdot \frac{|D|}{avgdl})}$$
-
----
-
-## 🔄 Search Execution Pipeline
-
-1. **Input Normalization:** Query is converted to lowercase and punctuation is removed.
-2. **Lexical Correction:** The system identifies and corrects spelling errors using Levenshtein Distance.
-3. **Semantic Expansion:** Synonyms are fetched via WordNet to broaden the search net.
-4. **Scoring & Ranking:** The engine calculates scores based on the selected algorithm.
-5. **Presentation:** Results are displayed with dynamically generated snippets and category labels.
-
----
-
-## 👩‍💻 Research Team
-
-**National University of Technology (NUTECH)** *Department of Computer Science*
-
-| Name | Institutional Email |
-| --- | --- |
-| **Eman Asghar** | emankainif23@nutech.edu.pk |
-| **Aena Habib** | aenahabibf23@nutech.edu.pk |
-| **Dua Kamal** | duakamalf23@nutech.edu.pk |
-| **Aleena Tahir** | aleenatahirf23@nutech.edu.pk |
-| **Saqlain Abbas** | saqlainabbas@nutech.edu.pk |
-
----
-
-## 🚀 Deployment Guide
-
-### Local Environment
+### Local environment
 
 ```bash
-# Initialize environment
 python -m venv venv
-source venv/bin/activate
+# Windows: venv\Scripts\activate
+# macOS/Linux: source venv/bin/activate
 
-# Install dependencies
 pip install -r requirements.txt
-
-# Launch application
 streamlit run app.py
-
 ```
 
-### Docker Implementation
+The first run downloads NLTK resources (~30 MB) and builds the index over the
+2,225 articles in `data/bbc_news.csv`. Subsequent runs are instant thanks to
+Streamlit's resource cache.
+
+### Docker
 
 ```bash
 docker compose up --build
-
 ```
 
----
+Then open <http://localhost:8501>. The dataset is bind-mounted from `./data`
+so swapping the CSV does not require a rebuild.
 
-## 📄 License
+## Project layout
 
-This project is licensed under the **MIT License**.
+| Path                | Role                                                        |
+| ------------------- | ----------------------------------------------------------- |
+| `app.py`            | Streamlit UI, session state, rendering of results.          |
+| `search_engine.py`  | Indexing, ranking (TF-IDF / BM25), spell + expansion.       |
+| `preprocessing.py`  | Lowercasing, tokenisation, stop-word removal, lemmatisation. |
+| `data/bbc_news.csv` | The corpus (2,225 articles · 5 categories).                  |
+| `Dockerfile`        | Reproducible runtime image (Python 3.11-slim).               |
+| `docker-compose.yml`| Single-service compose stack with health check.              |
 
-Copyright (c) 2026 QueryLens 
+## How a query is served
+
+1. **Spell correction** — unknown lowercase tokens are checked against
+   `pyspellchecker`. Proper nouns (capitalised tokens) are preserved as-is.
+2. **Query expansion** — each token is lemmatised, then up to two WordNet
+   synonyms are added to widen recall.
+3. **Preprocessing** — the expanded query goes through the same pipeline used
+   for indexing: lowercasing, punctuation stripping, stop-word removal,
+   lemmatisation.
+4. **Scoring** — TF-IDF cosine similarity or BM25, depending on the sidebar
+   toggle. An optional category filter zeros out scores for non-matching docs.
+5. **Presentation** — top-`k` results are returned with snippet windows in
+   which matched query terms are wrapped in `<mark>` for highlighting.
+
+## Ranking models
+
+### TF-IDF
+
+Term Frequency–Inverse Document Frequency weights how distinctive a term is
+to a document relative to the corpus.
+
+```
+tf(t, d)  = count(t in d) / |d|
+idf(t)    = log(N / (1 + df_t))
+tfidf     = tf · idf
+```
+
+Documents and queries are represented as TF-IDF vectors and compared with
+cosine similarity:
+
+```
+sim(q, d) = (q · d) / (‖q‖ · ‖d‖)
+```
+
+### BM25
+
+BM25 (Best Match 25) is a probabilistic ranking model with term-frequency
+saturation and document-length normalisation:
+
+```
+score(D, Q) = Σ IDF(q) · [f(q,D) · (k1 + 1)]
+                       / [f(q,D) + k1 · (1 − b + b · |D| / avgdl)]
+```
+
+Defaults: `k1 = 1.5`, `b = 0.75`. BM25 generally outperforms raw TF-IDF on
+mixed-length corpora.
+
+## Comparing the two
+
+| Property              | TF-IDF + cosine     | BM25                   |
+| --------------------- | ------------------- | ---------------------- |
+| Term saturation       | No                  | Yes (`k1`)             |
+| Length normalisation  | Implicit (cosine)   | Explicit (`b`)         |
+| Best for              | Short, similar docs | Mixed-length corpora   |
+| Cost to build         | One sparse matrix   | One token-frequency map |
+
+## Configuration
+
+Sidebar controls in the running app:
+
+- **Ranking method** — TF-IDF or BM25
+- **Number of results** — 1–20
+- **Categories** — filter to one or more BBC categories
+- **Spell correction** — toggle on/off
+- **Query expansion** — toggle on/off
+
+## Team
+
+National University of Technology (NUTECH) · Department of Computer Science
+
+| Name           | Email                            |
+| -------------- | -------------------------------- |
+| Eman Asghar    | emankainif23@nutech.edu.pk       |
+| Aena Habib     | aenahabibf23@nutech.edu.pk       |
+| Dua Kamal      | duakamalf23@nutech.edu.pk        |
+| Aleena Tahir   | aleenatahirf23@nutech.edu.pk     |
+| Saqlain Abbas  | saqlainabbasf23@nutech.edu.pk    |
+
+## License
+
+MIT. Copyright (c) 2026 QueryLens.

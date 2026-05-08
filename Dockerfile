@@ -1,17 +1,17 @@
 # ── Dockerfile ──────────────────────────────────────────────────────────────
-# Build:  docker build -t noor-search .
-# Run:    docker run -p 8501:8501 noor-search
+# Build:  docker build -t querylens .
+# Run:    docker run -p 8501:8501 querylens
 
 FROM python:3.11-slim
 
-# System dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
+# System dependencies (build-essential for any wheels that need to compile)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Install Python dependencies first (layer caching)
+# Install Python dependencies first (good layer caching)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -27,14 +27,15 @@ nltk.download('omw-1.4', quiet=True);"
 # Copy project files
 COPY . .
 
-# Create data directory (user mounts their CSV here)
+# Ensure data directory exists even if the CSV is mounted at runtime
 RUN mkdir -p data
 
 EXPOSE 8501
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=15s \
-    CMD curl -f http://localhost:8501/_stcore/health || exit 1
+# Health check uses urllib (slim image has no curl)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s \
+    CMD python -c "import urllib.request,sys; \
+sys.exit(0 if urllib.request.urlopen('http://localhost:8501/_stcore/health', timeout=5).status==200 else 1)" || exit 1
 
 CMD ["streamlit", "run", "app.py", \
      "--server.port=8501", \
