@@ -7,6 +7,16 @@
 **QueryLens** is a university-level Information Retrieval (IR) and Natural Language Processing (NLP) framework designed to provide high-precision search capabilities over structured news datasets. By integrating probabilistic ranking models like BM25 with traditional vector space models (TF-IDF), QueryLens bridges the gap between raw data and actionable insights.
 
 ---
+## Dataset Specifications
+
+The **QueryLens** engine is optimized for the **BBC News Dataset**, a benchmark corpus used for evaluating information retrieval and text classification models.
+
+* **Total Articles:** 2,225
+* **Format:** Structured CSV (`Title`, `Content`, `Category`)
+* **Thematic Categories:** Business, Entertainment, Politics, Sport, and Tech.
+* **Indexing Strategy:** The engine performs full-text indexing on the `Content` field while using `Title` for high-relevance weighting.
+
+---
 
 ## 📂 Project Architecture
 
