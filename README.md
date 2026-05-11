@@ -1,4 +1,4 @@
-# 🔍 QueryLens Search Engine
+# QueryLens Search Engine
 
 > An information retrieval and NLP project for the BBC News corpus.
 > National University of Technology · Department of Computer Science
